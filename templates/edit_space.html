@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-edit"></i> แก้ไขสถานที่</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_space', space_id=space[0]) }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-store"></i> ชื่อสถานที่
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ space[1] }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="location" class="form-label">
+                                    <i class="fas fa-map-marker-alt"></i> ที่อยู่
+                                </label>
+                                <input type="text" class="form-control" id="location" name="location" value="{{ space[2] }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="price" class="form-label">
+                                    <i class="fas fa-money-bill-wave"></i> ราคา (บาท/ล็อค/วัน)
+                                </label>
+                                <input type="number" class="form-control" id="price" name="price" value="{{ space[4] }}" min="0" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="available_days" class="form-label">
+                                    <i class="fas fa-calendar"></i> วันที่เปิด
+                                </label>
+                                <input type="text" class="form-control" id="available_days" name="available_days" 
+                                       value="{{ space[5] }}" placeholder="เช่น จันทร์,พุธ,ศุกร์" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="available_time" class="form-label">
+                                    <i class="fas fa-clock"></i> เวลาทำการ
+                                </label>
+                                <input type="text" class="form-control" id="available_time" name="available_time" 
+                                       value="{{ space[6] }}" placeholder="เช่น 08:00-18:00" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="amenities" class="form-label">
+                                    <i class="fas fa-tools"></i> สิ่งอำนวยความสะดวก
+                                </label>
+                                <textarea class="form-control" id="amenities" name="amenities" rows="3" 
+                                          placeholder="เช่น ไฟฟ้า, น้ำประปา, ที่จอดรถ">{{ space[7] if space[7] else '' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-th"></i> ขนาดพื้นที่ (ล็อค)
+                                </label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label for="rows" class="form-label">กว้าง</label>
+                                        <input type="number" class="form-control" id="rows" name="rows" 
+                                               min="1" max="20" value="{{ layout_data.rows }}" required onchange="updatePreview()">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="cols" class="form-label">ยาว</label>
+                                        <input type="number" class="form-control" id="cols" name="cols" 
+                                               min="1" max="20" value="{{ layout_data.cols }}" required onchange="updatePreview()">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Current Layout -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-eye"></i> แผนผังปัจจุบัน
+                                </label>
+                                <div class="current-layout">
+                                    <div class="layout-grid-current" style="grid-template-columns: repeat({{ layout_data.cols }}, 1fr);">
+                                        {% for row in range(layout_data.rows) %}
+                                            {% for col in range(layout_data.cols) %}
+                                                {% set slot_id = (row|string|int + 65)|chr + (col + 1)|string %}
+                                                <div class="current-slot">
+                                                    {{ slot_id }}
+                                                </div>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Preview New Layout -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-eye"></i> ตัวอย่างแผนผังใหม่
+                                </label>
+                                <div class="layout-preview-container">
+                                    <div class="preview-grid" id="previewGrid">
+                                        <!-- Will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <strong><i class="fas fa-exclamation-triangle"></i> คำเตือน:</strong>
+                                การเปลี่ยนขนาดแผนผังอาจส่งผลต่อการจองที่มีอยู่แล้ว
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('manage_spaces') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> ยกเลิก
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> บันทึกการแก้ไข
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.current-layout {
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8fff8;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.layout-grid-current {
+    display: grid;
+    gap: 3px;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.current-slot {
+    width: 25px;
+    height: 25px;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #28a745;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: #155724;
+    font-weight: bold;
+}
+
+.layout-preview-container {
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9ff;
+    text-align: center;
+}
+
+.preview-grid {
+    display: grid;
+    gap: 3px;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.preview-slot {
+    width: 25px;
+    height: 25px;
+    background: linear-gradient(135deg, #cce5ff 0%, #99d6ff 100%);
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: #0056b3;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .current-slot,
+    .preview-slot {
+        width: 20px;
+        height: 20px;
+        font-size: 0.6rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+});
+
+function updatePreview() {
+    const rows = parseInt(document.getElementById('rows').value) || {{ layout_data.rows }};
+    const cols = parseInt(document.getElementById('cols').value) || {{ layout_data.cols }};
+    const previewGrid = document.getElementById('previewGrid');
+    
+    // อัปเดต grid style
+    previewGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    previewGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    
+    // ล้างและสร้าง slots ใหม่
+    previewGrid.innerHTML = '';
+    
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            const slot = document.createElement('div');
+            slot.className = 'preview-slot';
+            slot.textContent = String.fromCharCode(65 + row) + (col + 1);
+            previewGrid.appendChild(slot);
+        }
+    }
+}
+</script>
+{% endblock %}

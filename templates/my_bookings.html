@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1><i class="fas fa-calendar-check"></i> การจองของฉัน</h1>
+
+{% if bookings %}
+<div class="row">
+    {% set grouped_bookings = bookings|groupby('3') %}
+    {% for date, date_bookings in grouped_bookings %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar"></i> วันที่ {{ date }}
+                    <span class="badge bg-light text-dark ms-2">{{ date_bookings|list|length }} ล็อค</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% set space_bookings = date_bookings|groupby('2') %}
+                {% for space_id, space_bookings_list in space_bookings %}
+                {% set space_bookings_list = space_bookings_list|list %}
+                {% set first_booking = space_bookings_list[0] %}
+                <div class="space-booking-group mb-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6><i class="fas fa-store"></i> {{ first_booking[6] }}</h6>
+                            <p class="mb-1"><strong><i class="fas fa-map-marker-alt"></i> สถานที่:</strong> {{ first_booking[7] }}</p>
+                            <p class="mb-1"><strong><i class="fas fa-user"></i> ผู้จอง:</strong> {{ first_booking[10] }} {{ first_booking[11] }}</p>
+                            <p class="mb-1"><strong><i class="fas fa-phone"></i> เบอร์โทร:</strong> {{ first_booking[12] }}</p>
+                            <p class="mb-1"><strong><i class="fas fa-clock"></i> วันที่สร้าง:</strong> {{ first_booking[5][:16] }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="booking-slots">
+                                <h6><i class="fas fa-th"></i> ล็อคที่จอง:</h6>
+                                <div class="slots-grid">
+                                    {% for booking in space_bookings_list %}
+                                    <span class="slot-badge {{ 'bg-success' if booking[4] == 'confirmed' else 'bg-warning' if booking[4] == 'pending' else 'bg-danger' }}">
+                                        {{ booking[3] if booking[3] else 'N/A' }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-2">
+                                    <strong>ราคารวม: </strong>
+                                    <span class="text-success">{{ (space_bookings_list|length * first_booking[9])|int }} บาท</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="booking-status mt-2">
+                        {% set all_confirmed = space_bookings_list|selectattr('4', 'equalto', 'confirmed')|list|length == space_bookings_list|length %}
+                        {% set all_pending = space_bookings_list|selectattr('4', 'equalto', 'pending')|list|length == space_bookings_list|length %}
+                        {% set all_cancelled = space_bookings_list|selectattr('4', 'equalto', 'cancelled')|list|length == space_bookings_list|length %}
+                        
+                        {% if all_confirmed %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> ชำระเงินแล้ว
+                            </span>
+                        {% elif all_pending %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock"></i> รอชำระเงิน
+                            </span>
+                            <div class="mt-2">
+                                <a href="{{ url_for('booking', space_id=first_booking[2]) }}?date={{ first_booking[3] }}" 
+                                   class="btn btn-success btn-sm me-2">
+                                   <i class="fas fa-credit-card"></i> ชำระเงิน
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        onclick="cancelSpaceBookings('{{ first_booking[2] }}', '{{ first_booking[3] }}')">
+                                    <i class="fas fa-times"></i> ยกเลิกทั้งหมด
+                                </button>
+                            </div>
+                        {% elif all_cancelled %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times-circle"></i> ยกเลิกแล้ว
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-exclamation-triangle"></i> สถานะผสม
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not loop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- สรุปสถิติ -->
+<div class="row mt-4">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card success">
+            <div class="text-success">
+                <h4>{{ bookings|selectattr('4', 'equalto', 'confirmed')|list|length }}</h4>
+                <small>ล็อคที่ยืนยันแล้ว</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card warning">
+            <div class="text-warning">
+                <h4>{{ bookings|selectattr('4', 'equalto', 'pending')|list|length }}</h4>
+                <small>ล็อครอชำระเงิน</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card danger">
+            <div class="text-danger">
+                <h4>{{ bookings|selectattr('4', 'equalto', 'cancelled')|list|length }}</h4>
+                <small>ล็อคที่ยกเลิก</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card primary">
+            <div class="text-primary">
+                <h4>{{ bookings|length }}</h4>
+                <small>ล็อคทั้งหมด</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="mb-4">
+        <i class="fas fa-calendar-times" style="font-size: 4rem; color: #cbd5e0;"></i>
+    </div>
+    <h4>ยังไม่มีการจอง</h4>
+    <p>คุณยังไม่ได้จองล็อคขายสินค้า เริ่มต้นหาล็อคที่เหมาะสมกับคุณกันเลย!</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-search"></i> เริ่มจองเลย
+    </a>
+</div>
+{% endif %}
+
+<style>
+.space-booking-group {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.slots-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.slot-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: white;
+}
+
+.booking-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .space-booking-group {
+        padding: 10px;
+    }
+    
+    .slots-grid {
+        justify-content: center;
+    }
+    
+    .booking-status {
+        justify-content: center;
+        text-align: center;
+    }
+}
+</style>
+
+<script>
+function cancelSpaceBookings(spaceId, bookingDate) {
+    if (!confirm('ต้องการยกเลิกการจองล็อคทั้งหมดในสถานที่นี้หรือไม่?')) {
+        return;
+    }
+    
+    // สร้าง form เพื่อส่งข้อมูล
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/cancel_space_bookings';
+    
+    const spaceInput = document.createElement('input');
+    spaceInput.type = 'hidden';
+    spaceInput.name = 'space_id';
+    spaceInput.value = spaceId;
+    
+    const dateInput = document.createElement('input');
+    dateInput.type = 'hidden';
+    dateInput.name = 'booking_date';
+    dateInput.value = bookingDate;
+    
+    form.appendChild(spaceInput);
+    form.appendChild(dateInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}

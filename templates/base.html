@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ระบบจองจุดขาย{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-store"></i> ระบบจองจุดขาย
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    {% if session.user_id %}
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> หน้าหลัก
+                        </a>
+                        <a class="nav-link" href="{{ url_for('my_bookings') }}">
+                            <i class="fas fa-calendar-check"></i> การจองของฉัน
+                        </a>
+                        <a class="nav-link" href="{{ url_for('manage_spaces') }}">
+                            <i class="fas fa-cog"></i> จัดการสถานที่
+                        </a>
+                        <span class="nav-link">
+                            <i class="fas fa-user"></i> สวัสดี {{ session.user_name }}
+                        </span>
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+                        </a>
+                    {% else %}
+                        <a class="nav-link" href="{{ url_for('login') }}">
+                            <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ
+                        </a>
+                        <a class="nav-link" href="{{ url_for('register') }}">
+                            <i class="fas fa-user-plus"></i> สมัครสมาชิก
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif category == 'error' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+    // Function สำหรับแก้ปัญหา modal backdrop
+    function clearModalBackdrop() {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(function(backdrop) {
+            backdrop.remove();
+        });
+        
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+        document.body.style.removeProperty('overflow');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        clearModalBackdrop();
+        
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(function(modal) {
+            modal.addEventListener('hidden.bs.modal', function() {
+                clearModalBackdrop();
+            });
+        });
+    });
+
+    window.addEventListener('beforeunload', function() {
+        clearModalBackdrop();
+    });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
